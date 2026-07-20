@@ -1,10 +1,16 @@
 /**
- * RAKI BAG SHOP MANAGEMENT SYSTEM — CORE LOGIC V3 (FIREBASE FIRESTORE EDITION)
- * ⚡️ ባህሪያት: ዋና ብር (ካፒታል) ከትርፍ መለየት | 0% VAT (ያለ ታክስ) | ባለሁለት ቋንቋ
- * 🔥 ውሂብ የሚቀመጠው በ Firebase Firestore ውስጥ ነው (ከ localStorage ይልቅ)
+ * RAKI BAG SHOP MANAGEMENT SYSTEM — CORE LOGIC V4 (FIREBASE AUTH + FIRESTORE EDITION)
+ * ⚡️ ባህሪያት: ዋና ብር (ካፒታል) ከትርፍ መለየት | 0% VAT (ያለ ታክስ) | ባለሁለት ቋንቋ | እውነተኛ Login/Signup
  */
 
 import { db } from "./firebase.js";
+import {
+    getAuth,
+    onAuthStateChanged,
+    signInWithEmailAndPassword,
+    createUserWithEmailAndPassword,
+    signOut
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import {
     collection,
     doc,
@@ -15,6 +21,8 @@ import {
     deleteDoc,
     updateDoc
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+const auth = getAuth();
 
 // --- 1. የትርጉም መዝገበ-ቃላት (DICTIONARY) ---
 const TranslationsDictionary = {
@@ -40,7 +48,10 @@ const TranslationsDictionary = {
         th_cust_name: "የደንበኛ ስም", th_phone: "ስልክ ቁጥር", th_orders: "የገዛው ብዛት", th_total_spend: "ያወጣው ጠቅላላ ገንዘብ",
         rep_title: "የሂሳብ እና የኦዲት ሪፖርቶች", rep_print: "ሪፖርት አትም",
         rep_gross: "ጠቅላላ የሽያጭ ገቢ (Gross Income):", rep_capital: "የዕቃዎች ጠቅላላ ዋና ብር (Total Capital Cost):",
-        rep_expenses: "ጠቅላላ ተጨማሪ ወጪዎች (Operational Expenses):", rep_net: "የተጣራ ንፁህ ትርፍ (Net Profit Margin):"
+        rep_expenses: "ጠቅላላ ተጨማሪ ወጪዎች (Operational Expenses):", rep_net: "የተጣራ ንፁህ ትርፍ (Net Profit Margin):",
+        auth_have_account: "አካውንት አለዎት?", auth_no_account: "አካውንት የለዎትም?",
+        auth_toggle_to_signup: "አዲስ ሂሳብ ይክፈቱ", auth_toggle_to_signin: "ግቡ (Sign In)",
+        auth_signup_btn: "ሂሳብ ክፈት"
     },
     en: {
         auth_subtitle: "Shop Management Portal V2",
@@ -64,12 +75,14 @@ const TranslationsDictionary = {
         th_cust_name: "Customer Name", th_phone: "Phone Line", th_orders: "Visits Count", th_total_spend: "Gross Account Volume",
         rep_title: "Financial Auditing Hub", rep_print: "Print Statement",
         rep_gross: "Total Sales Revenue (Gross Income):", rep_capital: "Total Capital Expended (Cost of Bags Sold):",
-        rep_expenses: "Total Auxiliary Outflows (Operational Expenses):", rep_net: "Net Earned Profit (Net Returns):"
+        rep_expenses: "Total Auxiliary Outflows (Operational Expenses):", rep_net: "Net Earned Profit (Net Returns):",
+        auth_have_account: "Already have an account?", auth_no_account: "Don't have an account?",
+        auth_toggle_to_signup: "Create an account", auth_toggle_to_signin: "Sign In instead",
+        auth_signup_btn: "Create Account"
     }
 };
 
 // --- 2. የFirestore ማገናኛ ንብርብር (FIRESTORE DATA SERVICE) ---
-// ይህ ንብርብር ከ Firestore ጋር ውይይት (read/write) የሚያደርገው ብቻ ነው።
 const DataService = {
     async loadCollection(collectionName) {
         try {
@@ -81,7 +94,6 @@ const DataService = {
         }
     },
     async setDocument(collectionName, id, data) {
-        // id ራሱ ተለይቶ በ collection ውስጥ ስለሚቀመጥ፣ ከ payload ላይ እናስወግደዋለን
         const { id: _omit, ...payload } = data;
         await setDoc(doc(db, collectionName, id), payload);
     },
@@ -111,7 +123,6 @@ const DataService = {
 };
 
 // --- 3. በ-ማህደረ ትውስታ ካሽ (LOCAL CACHE) ---
-// Rendering functions በሙሉ synchronous ሆነው እንዲቀጥሉ፣ ከ Firestore የመጣው ውሂብ እዚህ ካሽ ይደረጋል።
 const LocalDatabase = {
     tables: {
         products: [],
@@ -132,23 +143,102 @@ const LocalDatabase = {
 const AppState = {
     activeLanguage: "am",
     posCart: [],
-    loadedCharts: {}
+    loadedCharts: {},
+    authMode: "signin" // 'signin' | 'signup'
 };
 
-// --- 4. የሲስተሙ የስራ ቧንቧ (APPLICATION PIPELINE) ---
+// --- 4. የ Auth ስህተት መልእክቶች (FRIENDLY ERROR MESSAGES) ---
+function getAuthErrorMessage(err) {
+    const map = {
+        'auth/email-already-in-use': 'ይህ ኢሜይል አስቀድሞ ተመዝግቧል። እባክዎ "ግቡ" የሚለውን ተጠቅመው ይግቡ።',
+        'auth/weak-password': 'የይለፍ ቃል በጣም ደካማ ነው (ቢያንስ 6 ፊደላት/ቁጥሮች ያስፈልጋሉ)።',
+        'auth/invalid-email': 'ትክክለኛ ያልሆነ ኢሜይል አድራሻ ነው።',
+        'auth/user-not-found': 'ይህ ኢሜይል አልተመዘገበም። እባክዎ መጀመሪያ "ሂሳብ ክፈት" ይጫኑ።',
+        'auth/wrong-password': 'የተሳሳተ የይለፍ ቃል ነው።',
+        'auth/invalid-credential': 'ኢሜይል ወይም የይለፍ ቃል ትክክል አይደለም።',
+        'auth/too-many-requests': 'በጣም ብዙ ሙከራዎች ተደርገዋል። ትንሽ ቆይተው እንደገና ይሞክሩ።',
+        'auth/network-request-failed': 'የኢንተርኔት ግንኙነት ችግር። እባክዎ ያረጋግጡ እና እንደገና ይሞክሩ።'
+    };
+    return map[err.code] || 'ስህተት ተከስቷል፣ እባክዎ እንደገና ይሞክሩ።';
+}
+
+// --- 5. የሲስተሙ የስራ ቧንቧ (APPLICATION PIPELINE) ---
 const SystemPipeline = {
     async init() {
+        this.registerEventBindings();
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                await this.handleAuthenticatedSession(user);
+            } else {
+                this.showAuthScreen();
+            }
+        });
+    },
+
+    async handleAuthenticatedSession(firebaseUser) {
+        let resolvedRole = "employee";
+        try {
+            const userSnap = await getDoc(doc(db, "users", firebaseUser.uid));
+            if (userSnap.exists()) resolvedRole = userSnap.data().role || resolvedRole;
+        } catch (err) {
+            console.error("የ Role መረጃ ማምጫ ላይ ስህተት:", err);
+        }
+
         await LocalDatabase.loadAll();
         AppState.activeLanguage = LocalDatabase.tables.settings.lang || "am";
-
         this.translateInterface(AppState.activeLanguage);
-        this.registerEventBindings();
+
+        const userDisplay = document.getElementById('user-display-name');
+        const roleDisplay = document.getElementById('user-display-role');
+        if (userDisplay) userDisplay.innerText = firebaseUser.email.split('@')[0].toUpperCase();
+        if (roleDisplay) roleDisplay.innerText = resolvedRole.toUpperCase();
+
+        const authContainer = document.getElementById('auth-container');
+        const appContainer = document.getElementById('app-container');
+        if (authContainer) authContainer.classList.add('hidden');
+        if (appContainer) appContainer.classList.remove('hidden');
+
         this.calculateBusinessMetrics();
         this.renderPOSCatalog();
         this.renderInventoryTable();
         this.renderExpenseTable();
         this.renderCustomerTable();
         this.triggerInventoryLiveAlerts();
+        this.renderAnalyticsCharts();
+    },
+
+    showAuthScreen() {
+        const authContainer = document.getElementById('auth-container');
+        const appContainer = document.getElementById('app-container');
+        if (authContainer) authContainer.classList.remove('hidden');
+        if (appContainer) appContainer.classList.add('hidden');
+
+        const authForm = document.getElementById('auth-form');
+        if (authForm) authForm.reset();
+    },
+
+    setAuthMode(mode) {
+        AppState.authMode = mode;
+        const lang = AppState.activeLanguage;
+        const dict = TranslationsDictionary[lang] || TranslationsDictionary.am;
+
+        const submitBtn = document.getElementById('auth-submit-btn');
+        const roleGroup = document.getElementById('auth-role-group');
+        const promptEl = document.getElementById('auth-mode-prompt');
+        const toggleLink = document.getElementById('auth-toggle-mode');
+
+        if (mode === 'signup') {
+            if (submitBtn) submitBtn.innerText = dict.auth_signup_btn;
+            if (roleGroup) roleGroup.classList.remove('hidden');
+            if (promptEl) promptEl.innerText = dict.auth_have_account;
+            if (toggleLink) toggleLink.innerText = dict.auth_toggle_to_signin;
+        } else {
+            if (submitBtn) submitBtn.innerText = dict.sign_in;
+            if (roleGroup) roleGroup.classList.add('hidden');
+            if (promptEl) promptEl.innerText = dict.auth_no_account;
+            if (toggleLink) toggleLink.innerText = dict.auth_toggle_to_signup;
+        }
     },
 
     translateInterface(lang) {
@@ -163,6 +253,9 @@ const SystemPipeline = {
         });
         const langSelector = document.getElementById('lang-selector');
         if (langSelector) langSelector.value = lang;
+
+        // Auth screen button/labels also need re-sync with current mode
+        this.setAuthMode(AppState.authMode);
     },
 
     registerEventBindings() {
@@ -199,33 +292,60 @@ const SystemPipeline = {
             });
         });
 
-        // Authentication form handler (UI-only display; real login is handled in your auth flow)
+        // --- Auth mode toggle (Sign In <-> Sign Up) ---
+        const authToggleMode = document.getElementById('auth-toggle-mode');
+        if (authToggleMode) {
+            authToggleMode.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.setAuthMode(AppState.authMode === 'signin' ? 'signup' : 'signin');
+            });
+        }
+        this.setAuthMode(AppState.authMode); // initialize UI text on load
+
+        // --- Real Firebase Authentication form handler ---
         const authForm = document.getElementById('auth-form');
         if (authForm) {
-            authForm.addEventListener('submit', (e) => {
+            authForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
-                const emailInput = document.getElementById('auth-email');
-                const roleInput = document.getElementById('auth-role');
-                const userDisplay = document.getElementById('user-display-name');
-                const roleDisplay = document.getElementById('user-display-role');
-                const authContainer = document.getElementById('auth-container');
-                const appContainer = document.getElementById('app-container');
+                const email = document.getElementById('auth-email').value.trim();
+                const password = document.getElementById('auth-password').value;
+                const roleSelectEl = document.getElementById('auth-role');
+                const chosenRole = roleSelectEl ? roleSelectEl.value : "employee";
+                const submitBtn = document.getElementById('auth-submit-btn');
 
-                if (emailInput && userDisplay) userDisplay.innerText = emailInput.value.split('@')[0].toUpperCase();
-                if (roleInput && roleDisplay) roleDisplay.innerText = roleInput.value.toUpperCase();
-                if (authContainer) authContainer.classList.add('hidden');
-                if (appContainer) appContainer.classList.remove('hidden');
-                this.renderAnalyticsCharts();
+                if (submitBtn) submitBtn.disabled = true;
+
+                try {
+                    if (AppState.authMode === 'signup') {
+                        const credential = await createUserWithEmailAndPassword(auth, email, password);
+                        await setDoc(doc(db, "users", credential.user.uid), {
+                            email,
+                            role: chosenRole,
+                            createdAt: new Date().toISOString()
+                        });
+                        // onAuthStateChanged ራሱ handleAuthenticatedSession ን ይጠራል
+                    } else {
+                        await signInWithEmailAndPassword(auth, email, password);
+                        // onAuthStateChanged ራሱ handleAuthenticatedSession ን ይጠራል
+                    }
+                } catch (err) {
+                    console.error("Auth Error:", err);
+                    alert(getAuthErrorMessage(err));
+                } finally {
+                    if (submitBtn) submitBtn.disabled = false;
+                }
             });
         }
 
         const btnLogout = document.getElementById('btn-logout');
         if (btnLogout) {
-            btnLogout.addEventListener('click', () => {
-                const appContainer = document.getElementById('app-container');
-                const authContainer = document.getElementById('auth-container');
-                if (appContainer) appContainer.classList.add('hidden');
-                if (authContainer) authContainer.classList.remove('hidden');
+            btnLogout.addEventListener('click', async () => {
+                try {
+                    await signOut(auth);
+                    AppState.posCart = [];
+                } catch (err) {
+                    console.error("Logout Error:", err);
+                }
             });
         }
 
@@ -368,7 +488,7 @@ const SystemPipeline = {
         return base;
     },
 
-    // --- 5. የፋይናንስ የሂሳብ ማሽን (FINANCIAL ENGINE) ---
+    // --- 6. የፋይናንስ የሂሳብ ማሽን (FINANCIAL ENGINE) ---
     calculateBusinessMetrics() {
         const productsList = LocalDatabase.tables.products;
         const salesReceipts = LocalDatabase.tables.sales;
@@ -411,7 +531,7 @@ const SystemPipeline = {
         AppState.dashboardCalculations = { totalGrossSalesRevenue, totalCostOfItemsSold, operationalExpensesSum, netShopProfitMargin };
     },
 
-    // --- 6. ቻርቶች መሳያ (ANALYTICS VISUALIZATIONS) ---
+    // --- 7. ቻርቶች መሳያ (ANALYTICS VISUALIZATIONS) ---
     renderAnalyticsCharts() {
         if (AppState.loadedCharts.salesChartInstance) AppState.loadedCharts.salesChartInstance.destroy();
         if (AppState.loadedCharts.profitChartInstance) AppState.loadedCharts.profitChartInstance.destroy();
@@ -452,7 +572,7 @@ const SystemPipeline = {
         }
     },
 
-    // --- 7. የቦርሳ ዕቃዎች ምዝገባ ማሽን (INVENTORY CONTROL — FIRESTORE) ---
+    // --- 8. የቦርሳ ዕቃዎች ምዝገባ ማሽን (INVENTORY CONTROL — FIRESTORE) ---
     async processProductRegistration(e) {
         e.preventDefault();
         const existingId = document.getElementById('prod-id').value;
@@ -547,7 +667,7 @@ const SystemPipeline = {
         });
     },
 
-    // --- 8. የሽያጭ ማሽን (POS WORKSTATION ENGINE - NO VAT) ---
+    // --- 9. የሽያጭ ማሽን (POS WORKSTATION ENGINE - NO VAT) ---
     renderPOSCatalog() {
         const gridView = document.getElementById('pos-catalog-grid');
         if (!gridView) return;
@@ -696,7 +816,7 @@ const SystemPipeline = {
         }
     },
 
-    // --- 9. ተጨማሪ ወጪዎች እና ደንበኞች አስተዳዳሪ (EXPENSES & CUSTOMERS — FIRESTORE) ---
+    // --- 10. ተጨማሪ ወጪዎች እና ደንበኞች አስተዳዳሪ (EXPENSES & CUSTOMERS — FIRESTORE) ---
     async processExpenseRegistration(e) {
         e.preventDefault();
         const expenseLog = {
