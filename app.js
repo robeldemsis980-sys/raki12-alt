@@ -10,12 +10,30 @@ import {
 // Firestore Collection Reference
 const bagsCollection = collection(db, "bags");
 
-// 1. ቦርሳዎችን ከ Firebase Firestore ማምጫ function
+// 1. የ Login Form መቆጣጠሪያ (ገጹ Refresh እንዳያደርግ Prevent ማድረጊያ)
+const loginForm = document.getElementById("login-form") || document.querySelector("form");
+
+if (loginForm) {
+  loginForm.addEventListener("submit", (e) => {
+    e.preventDefault(); // ገጹ Refresh እንዳያደርግ ይከለክላል
+    
+    // የሜኑ/ዳሽቦርድ ገጹን ማሳየት (Dashboard View ማብራት)
+    const loginSection = document.getElementById("login-section") || document.querySelector(".login-container");
+    const mainDashboard = document.getElementById("main-dashboard") || document.getElementById("dashboard");
+
+    if (loginSection) loginSection.style.display = "none";
+    if (mainDashboard) mainDashboard.style.display = "block";
+
+    loadBags(); // እቃዎችን ከ Cloud መጫን
+  });
+}
+
+// 2. እቃዎችን ከ Firestore ማምጫ function
 async function loadBags() {
   const bagList = document.getElementById("bag-list");
   if (!bagList) return;
   
-  bagList.innerHTML = "<p>Loading...</p>";
+  bagList.innerHTML = "<p>መረጃዎች በመጫን ላይ ናቸው...</p>";
 
   try {
     const querySnapshot = await getDocs(bagsCollection);
@@ -36,7 +54,6 @@ async function loadBags() {
         <img src="${bag.imageUrl || 'https://via.placeholder.com/150'}" alt="${bag.name}">
         <h3>${bag.name}</h3>
         <p>ዋጋ፦ ${bag.price} ብር</p>
-        <p>ብዛት፦ ${bag.quantity || 1}</p>
         <button onclick="deleteBag('${id}')" class="btn-delete">ሰርዝ</button>
       ;
       bagList.appendChild(bagCard);
@@ -47,26 +64,28 @@ async function loadBags() {
   }
 }
 
-// 2. አዲስ ቦርሳ ወደ Firebase መጨመሪያ Form Event Listener
+// 3. አዲስ እቃ መጨመሪያ Form Event Listener
 const bagForm = document.getElementById("bag-form");
 if (bagForm) {
   bagForm.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    const name = document.getElementById("bag-name").value;
-    const price = document.getElementById("bag-price").value;
-    const imageUrl = document.getElementById("bag-image").value;
+    const nameInput = document.getElementById("bag-name");
+    const priceInput = document.getElementById("bag-price");
+    const imageInput = document.getElementById("bag-image");
+
+    if (!nameInput || !priceInput) return;
 
     try {
       await addDoc(bagsCollection, {
-        name: name,
-        price: Number(price),
-        imageUrl: imageUrl,
+        name: nameInput.value,
+        price: Number(priceInput.value),
+        imageUrl: imageInput ? imageInput.value : '',
         createdAt: new Date()
       });
 
       bagForm.reset();
-      loadBags(); // ዝርዝሩን ማደስ
+      loadBags();
       alert("ዕቃው በስኬት ተመዝግቧል!");
     } catch (error) {
       console.error("Error adding document: ", error);
@@ -75,7 +94,7 @@ if (bagForm) {
   });
 }
 
-// 3. ቦርሳ የመሰረዝ function (Global Window Scope ላይ ማድረግ)
+// 4. እቃ የመሰረዝ function
 window.deleteBag = async function(id) {
   if (confirm("እርግጠኛ ነዎት ይህን ዕቃ መሰረዝ ይፈልጋሉ?")) {
     try {
@@ -87,5 +106,5 @@ window.deleteBag = async function(id) {
   }
 };
 
-// ገጹ ሲከፈት መረጃዎችን ሎድ ማድረግ
+// ገጹ እንደተከፈተ ዳታዎችን መጫን
 document.addEventListener("DOMContentLoaded", loadBags);
