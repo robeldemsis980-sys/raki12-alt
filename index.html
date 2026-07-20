@@ -32,17 +32,21 @@
                 </div>
                 <div class="form-group">
                     <label data-i18n="password_label">የይለፍ ቃል / Password</label>
-                    <input type="password" id="auth-password" required placeholder="123456">
+                    <input type="password" id="auth-password" required placeholder="123456" minlength="6">
                 </div>
-                <div class="form-group">
+                <div class="form-group" id="auth-role-group">
                     <label data-i18n="role_label">ኃላፊነት / Role</label>
                     <select id="auth-role">
                         <option value="admin" data-i18n="role_admin">አስተዳዳሪ / Admin</option>
                         <option value="employee" data-i18n="role_employee">ሠራተኛ / Employee</option>
                     </select>
                 </div>
-                <button type="submit" class="btn btn-primary btn-block" data-i18n="sign_in">ግባ / Sign In</button>
+                <button type="submit" class="btn btn-primary btn-block" id="auth-submit-btn" data-i18n="sign_in">ግባ / Sign In</button>
             </form>
+            <p class="auth-toggle-text" style="text-align:center; margin-top:14px; font-size:0.9rem;">
+                <span id="auth-mode-prompt">አካውንት የለዎትም?</span>
+                <a href="#" id="auth-toggle-mode" style="font-weight:600; margin-left:6px;">አዲስ ሂሳብ ይክፈቱ</a>
+            </p>
         </div>
     </div>
 
