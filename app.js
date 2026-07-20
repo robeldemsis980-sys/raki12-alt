@@ -1,5 +1,9 @@
 import { db } from "./firebase.js";
 import { 
+  getAuth, 
+  signInWithEmailAndPassword 
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import { 
   collection, 
   addDoc, 
   getDocs, 
@@ -7,28 +11,46 @@ import {
   doc 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-// Firestore Collection Reference
+const auth = getAuth();
 const bagsCollection = collection(db, "bags");
 
-// 1. የ Login Form መቆጣጠሪያ (ገጹ Refresh እንዳያደርግ Prevent ማድረጊያ)
-const loginForm = document.getElementById("login-form") || document.querySelector("form");
+// 1. የ Login መቆጣጠሪያ
+const loginForm = document.querySelector("form");
 
 if (loginForm) {
-  loginForm.addEventListener("submit", (e) => {
-    e.preventDefault(); // ገጹ Refresh እንዳያደርግ ይከለክላል
-    
-    // የሜኑ/ዳሽቦርድ ገጹን ማሳየት (Dashboard View ማብራት)
-    const loginSection = document.getElementById("login-section") || document.querySelector(".login-container");
-    const mainDashboard = document.getElementById("main-dashboard") || document.getElementById("dashboard");
+  loginForm.addEventListener("submit", async (e) => {
+    e.preventDefault(); // ገጹ Refresh እንዳያደርግ መከልከል
 
-    if (loginSection) loginSection.style.display = "none";
-    if (mainDashboard) mainDashboard.style.display = "block";
+    // በኢሜይል እና ፓስወርድ ሳጥን ውስጥ ያሉትን ጽሑፎች ማግኘት
+    const emailInput = document.querySelector('input[type="email"]');
+    const passwordInput = document.querySelector('input[type="password"]');
 
-    loadBags(); // እቃዎችን ከ Cloud መጫን
+    if (!emailInput || !passwordInput) return;
+
+    const email = emailInput.value;
+    const password = passwordInput.value;
+
+    try {
+      // ወደ Firebase Login ለማድረግ መሞከር
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      alert("በስኬት ገብተዋል!");
+      
+      // Login section ን መሸሸግ እና ዋናውን ገጽ ማሳየት
+      document.body.classList.add("logged-in");
+      
+      // የሎጊን ፎርም ካለ መሸሸግ
+      const modal = document.querySelector(".modal") || document.querySelector(".login-container");
+      if (modal) modal.style.display = "none";
+
+      loadBags();
+    } catch (error) {
+      console.error("Login Error:", error);
+      alert("መግባት አልተቻለም! እባክዎ ኢሜይል እና ፓስወርድዎን ያረጋግጡ። Error: " + error.message);
+    }
   });
 }
 
-// 2. እቃዎችን ከ Firestore ማምጫ function
+// 2. እቃዎችን ማምጫ function
 async function loadBags() {
   const bagList = document.getElementById("bag-list");
   if (!bagList) return;
@@ -60,41 +82,10 @@ async function loadBags() {
     });
   } catch (error) {
     console.error("Error fetching bags: ", error);
-    bagList.innerHTML = "<p>መረጃዎችን ማምጣት አልተቻለም።</p>";
   }
 }
 
-// 3. አዲስ እቃ መጨመሪያ Form Event Listener
-const bagForm = document.getElementById("bag-form");
-if (bagForm) {
-  bagForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
-
-    const nameInput = document.getElementById("bag-name");
-    const priceInput = document.getElementById("bag-price");
-    const imageInput = document.getElementById("bag-image");
-
-    if (!nameInput || !priceInput) return;
-
-    try {
-      await addDoc(bagsCollection, {
-        name: nameInput.value,
-        price: Number(priceInput.value),
-        imageUrl: imageInput ? imageInput.value : '',
-        createdAt: new Date()
-      });
-
-      bagForm.reset();
-      loadBags();
-      alert("ዕቃው በስኬት ተመዝግቧል!");
-    } catch (error) {
-      console.error("Error adding document: ", error);
-      alert("ዕቃውን መመዝገብ አልተቻለም፤ እባክዎ ድጋሚ ይሞክሩ።");
-    }
-  });
-}
-
-// 4. እቃ የመሰረዝ function
+// 3. እቃ የመሰረዝ function
 window.deleteBag = async function(id) {
   if (confirm("እርግጠኛ ነዎት ይህን ዕቃ መሰረዝ ይፈልጋሉ?")) {
     try {
@@ -105,6 +96,3 @@ window.deleteBag = async function(id) {
     }
   }
 };
-
-// ገጹ እንደተከፈተ ዳታዎችን መጫን
-document.addEventListener("DOMContentLoaded", loadBags);
