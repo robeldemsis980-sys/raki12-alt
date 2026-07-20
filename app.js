@@ -19,38 +19,35 @@ const loginForm = document.querySelector("form");
 
 if (loginForm) {
   loginForm.addEventListener("submit", async (e) => {
-    e.preventDefault(); // ገጹ Refresh እንዳያደርግ መከልከል
+    e.preventDefault();
 
-    // በኢሜይል እና ፓስወርድ ሳጥን ውስጥ ያሉትን ጽሑፎች ማግኘት
     const emailInput = document.querySelector('input[type="email"]');
     const passwordInput = document.querySelector('input[type="password"]');
 
     if (!emailInput || !passwordInput) return;
 
-    const email = emailInput.value;
+    const email = emailInput.value.trim();
     const password = passwordInput.value;
 
     try {
-      // ወደ Firebase Login ለማድረግ መሞከር
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      await signInWithEmailAndPassword(auth, email, password);
       alert("በስኬት ገብተዋል!");
       
-      // Login section ን መሸሸግ እና ዋናውን ገጽ ማሳየት
-      document.body.classList.add("logged-in");
-      
-      // የሎጊን ፎርም ካለ መሸሸግ
-      const modal = document.querySelector(".modal") || document.querySelector(".login-container");
-      if (modal) modal.style.display = "none";
+      const loginSection = document.getElementById("login-section") || document.querySelector(".login-container");
+      const mainDashboard = document.getElementById("main-dashboard") || document.getElementById("dashboard");
+
+      if (loginSection) loginSection.style.display = "none";
+      if (mainDashboard) mainDashboard.style.display = "block";
 
       loadBags();
     } catch (error) {
       console.error("Login Error:", error);
-      alert("መግባት አልተቻለም! እባክዎ ኢሜይል እና ፓስወርድዎን ያረጋግጡ። Error: " + error.message);
+      alert("መግባት አልተቻለም! እባክዎ ኢሜይል እና ፓስወርድዎን ያረጋግጡ።");
     }
   });
 }
 
-// 2. እቃዎችን ማምጫ function
+// 2. እቃዎችን ከ Firestore ማምጫ function
 async function loadBags() {
   const bagList = document.getElementById("bag-list");
   if (!bagList) return;
@@ -72,12 +69,27 @@ async function loadBags() {
 
       const bagCard = document.createElement("div");
       bagCard.className = "bag-card";
-      bagCard.innerHTML = 
-        <img src="${bag.imageUrl || 'https://via.placeholder.com/150'}" alt="${bag.name}">
-        <h3>${bag.name}</h3>
-        <p>ዋጋ፦ ${bag.price} ብር</p>
-        <button onclick="deleteBag('${id}')" class="btn-delete">ሰርዝ</button>
-      ;
+      
+      const img = document.createElement("img");
+      img.src = bag.imageUrl || "https://via.placeholder.com/150";
+      img.alt = bag.name || "Bag";
+
+      const title = document.createElement("h3");
+      title.textContent = bag.name;
+
+      const price = document.createElement("p");
+      price.textContent = ዋጋ፦ ${bag.price} ብር;
+
+      const delBtn = document.createElement("button");
+      delBtn.className = "btn-delete";
+      delBtn.textContent = "ሰርዝ";
+      delBtn.onclick = () => deleteBag(id);
+
+      bagCard.appendChild(img);
+      bagCard.appendChild(title);
+      bagCard.appendChild(price);
+      bagCard.appendChild(delBtn);
+
       bagList.appendChild(bagCard);
     });
   } catch (error) {
