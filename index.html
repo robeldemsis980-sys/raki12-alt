@@ -68,6 +68,7 @@
                 <div class="user-info">
                     <h4 id="user-display-name">Admin</h4>
                     <span id="user-display-role" class="role-badge">ADMIN</span>
+                    <span id="user-role-indicator" class="role-indicator admin">Admin Access</span>
                 </div>
             </div>
 
@@ -81,13 +82,16 @@
                 <a href="#inventory" class="menu-item" data-target="inventory-section">
                     <i class="fa-solid fa-boxes-stacked"></i> <span data-i18n="menu_inventory">የዕቃዎች ክምችት</span>
                 </a>
-                <a href="#expenses" class="menu-item" data-target="expenses-section">
+                <a href="#expenses" class="menu-item admin-only-menu" data-target="expenses-section">
                     <i class="fa-solid fa-wallet"></i> <span data-i18n="menu_expenses">ወጪዎች / Expenses</span>
                 </a>
-                <a href="#customers" class="menu-item" data-target="customers-section">
+                <a href="#customers" class="menu-item admin-only-menu" data-target="customers-section">
                     <i class="fa-solid fa-users"></i> <span data-i18n="menu_customers">ደንበኞች / Customers</span>
                 </a>
-                <a href="#reports" class="menu-item" data-target="reports-section">
+                <a href="#activity" class="menu-item admin-only-menu" data-target="activity-section">
+                    <i class="fa-solid fa-clock-rotate-left"></i> <span data-i18n="menu_activity">የስራ መዝገብ / Activity Log</span>
+                </a>
+                <a href="#reports" class="menu-item admin-only-menu" data-target="reports-section">
                     <i class="fa-solid fa-file-invoice-dollar"></i> <span data-i18n="menu_reports">ሪፖርቶች / Reports</span>
                 </a>
             </nav>
@@ -218,6 +222,10 @@
 
                 <!-- 2. POINT OF SALE (POS) -->
                 <section id="pos-section" class="workspace-section hidden">
+                    <div class="staff-banner staff-only-banner" id="staff-pos-banner" style="display:none;">
+                        <i class="fa-solid fa-user-shield"></i>
+                        <span data-i18n="staff_pos_notice">እርስዎ ሰራተኛ ስለሆኑ እቃ መሸጥ ብቻ ይችላሉ። እቃዎችን መጨመር፣ መሰረዝ ወይም መስተካከል አይችሉም።</span>
+                    </div>
                     <div class="pos-workspace">
                         <!-- Catalog List -->
                         <div class="pos-catalog-side">
@@ -269,12 +277,16 @@
 
                 <!-- 3. INVENTORY MANAGEMENT -->
                 <section id="inventory-section" class="workspace-section hidden">
+                    <div class="staff-banner staff-only-banner" id="staff-inv-banner" style="display:none;">
+                        <i class="fa-solid fa-eye"></i>
+                        <span data-i18n="staff_inv_notice">እርስዎ ሰራተኛ ስለሆኑ የእቃዎች ዝርዝር ማየት ብቻ ይችላሉ። እቃዎችን መጨመር፣ መሰረዝ ወይም መስተካከል አይችሉም።</span>
+                    </div>
                     <div class="page-title-action">
                         <div>
                             <h2 data-i18n="inv_title">የቦርሳዎች መቆጣጠሪያ መዝገብ</h2>
                             <p class="text-muted">የቦርሳ መግዣ ዋና ዋጋ (ካፒታል) እና መሸጫ ዋጋ ማስተዳደሪያ።</p>
                         </div>
-                        <button class="btn btn-primary" id="open-product-modal">
+                        <button class="btn btn-primary admin-only-btn" id="open-product-modal">
                             <i class="fa-solid fa-plus"></i> <span data-i18n="inv_btn_add">አዲስ ቦርሳ መዝግብ</span>
                         </button>
                     </div>
@@ -304,7 +316,7 @@
                             <h2 data-i18n="exp_title">የሱቅ ወጪዎች መመዝገቢያ</h2>
                             <p class="text-muted">ከተጣራ ትርፍ ላይ የሚቀነሱ ልዩ ልዩ የሱቅ ወጪዎች መመዝገቢያ።</p>
                         </div>
-                        <button class="btn btn-primary" id="open-expense-modal">
+                        <button class="btn btn-primary admin-only-btn" id="open-expense-modal">
                             <i class="fa-solid fa-plus"></i> <span data-i18n="exp_btn_add">አዲስ ወጪ መዝግብ</span>
                         </button>
                     </div>
@@ -331,7 +343,7 @@
                             <h2 data-i18n="cust_title">የደንበኞች መረጃ ማዕከል</h2>
                             <p class="text-muted">የደንበኞች መረጃ እና የሽያጭ ታሪክ መዝገብ።</p>
                         </div>
-                        <button class="btn btn-primary" id="open-customer-modal">
+                        <button class="btn btn-primary admin-only-btn" id="open-customer-modal">
                             <i class="fa-solid fa-user-plus"></i> <span data-i18n="cust_btn_add">ደንበኛ መዝግብ</span>
                         </button>
                     </div>
@@ -349,6 +361,31 @@
                             </thead>
                             <tbody id="customer-table-body"></tbody>
                         </table>
+                    </div>
+                </section>
+
+                <!-- ACTIVITY LOG MODULE (Admin Only) -->
+                <section id="activity-section" class="workspace-section hidden">
+                    <div class="page-title-action">
+                        <div>
+                            <h2 data-i18n="activity_title">የስራ መዝገብ / Activity Log</h2>
+                            <p class="text-muted">ሰራተኞች እና አስተዳዳሪዎች ያደረጉትን ድርጊቶች መከታተያ።</p>
+                        </div>
+                        <div class="log-filter-tabs">
+                            <button class="log-filter-tab active" data-filter="all" data-i18n="log_all">ሁሉም</button>
+                            <button class="log-filter-tab" data-filter="sale" data-i18n="log_sale">ሽያጭ</button>
+                            <button class="log-filter-tab" data-filter="product" data-i18n="log_product">እቃ</button>
+                            <button class="log-filter-tab" data-filter="expense" data-i18n="log_expense">ወጪ</button>
+                            <button class="log-filter-tab" data-filter="customer" data-i18n="log_customer">ደንበኛ</button>
+                        </div>
+                    </div>
+
+                    <div class="glass-card activity-log-container" id="activity-log-wrapper">
+                        <div class="activity-empty" id="activity-empty-state">
+                            <i class="fa-solid fa-clipboard-list"></i>
+                            <p data-i18n="activity_empty">እስካሁን ምንም መዝገብ የለም።</p>
+                        </div>
+                        <div id="activity-log-list"></div>
                     </div>
                 </section>
 
@@ -410,56 +447,3 @@
                     <div class="form-group"><label>ከለር / ቀለም</label><input type="text" id="prod-color"></div>
                     <div class="form-group"><label>መጠን (Size)</label><input type="text" id="prod-size"></div>
                     <div class="form-group"><label>ብዛት (Quantity)</label><input type="number" id="prod-qty" required></div>
-                    <div class="form-group"><label>ዋና ብር - የመግዣ ዋጋ (Buying Cost)</label><input type="number" step="0.01" id="prod-buy-price" required></div>
-                    <div class="form-group"><label>የመሸጫ ዋጋ (Selling Price)</label><input type="number" step="0.01" id="prod-sell-price" required></div>
-                    <div class="form-group"><label>የምስል ሊንክ (Image URL)</label><input type="text" id="prod-image"></div>
-                </div>
-                <button type="submit" class="btn btn-primary btn-block margin-top-lg">የቦርሳውን መረጃ አስቀምጥ</button>
-            </form>
-        </div>
-    </div>
-
-    <!-- 2. Expense Modal -->
-    <div id="expense-modal" class="modal-overlay hidden">
-        <div class="modal-box max-width-sm">
-            <div class="modal-header">
-                <h3>የሱቅ ልዩ ልዩ ወጪ መመዝገቢያ</h3>
-                <button class="close-modal-btn">&times;</button>
-            </div>
-            <form id="expense-form">
-                <div class="form-group">
-                    <label>የወጪ አይነት</label>
-                    <select id="exp-category">
-                        <option value="Rent">ቤት ኪራይ (Rent)</option>
-                        <option value="Salary">ደመወዝ (Salary)</option>
-                        <option value="Transport">ትራንስፖርት (Transport)</option>
-                        <option value="Electricity">መብራት (Electricity)</option>
-                        <option value="Internet">ኢንተርኔት (Internet)</option>
-                        <option value="Other">ሌላ ወጪ (Other)</option>
-                    </select>
-                </div>
-                <div class="form-group"><label>የወጪ ዝርዝር መግለጫ</label><input type="text" id="exp-desc" required></div>
-                <div class="form-group"><label>የገንዘብ መጠን (ETB)</label><input type="number" step="0.01" id="exp-amount" required></div>
-                <button type="submit" class="btn btn-primary btn-block margin-top-md">ወጪውን መዝግብ</button>
-            </form>
-        </div>
-    </div>
-
-    <!-- 3. Customer Modal -->
-    <div id="customer-modal" class="modal-overlay hidden">
-        <div class="modal-box max-width-sm">
-            <div class="modal-header">
-                <h3>የአዲስ ደንበኛ መመዝገቢያ</h3>
-                <button class="close-modal-btn">&times;</button>
-            </div>
-            <form id="customer-form">
-                <div class="form-group"><label>የደንበኛ ሙሉ ስም</label><input type="text" id="cust-name" required></div>
-                <div class="form-group"><label>ስልክ ቁጥር</label><input type="text" id="cust-phone" required></div>
-                <button type="submit" class="btn btn-primary btn-block margin-top-md">ደንበኛውን መዝግብ</button>
-            </form>
-        </div>
-    </div>
-
-    <script type="module" src="app.js"></script>
-</body>
-</html>
