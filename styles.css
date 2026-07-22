@@ -640,264 +640,6 @@ body {
 }
 
 /* ==========================================================
-   [ADDED] ACTIVITY LOG & ROLE-BASED ACCESS STYLES
-   ========================================================== */
-
-/* Activity Log Section */
-.activity-log-container {
-    max-height: 500px;
-    overflow-y: auto;
-}
-
-.activity-log-item {
-    display: flex;
-    align-items: flex-start;
-    gap: 1rem;
-    padding: 1rem;
-    border-bottom: 1px solid var(--surface-border);
-    transition: background-color 0.2s ease;
-}
-
-.activity-log-item:hover {
-    background: var(--surface-bg);
-}
-
-.activity-log-item:last-child {
-    border-bottom: none;
-}
-
-.activity-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    font-size: 1rem;
-}
-
-.activity-icon.sale { background: rgba(16, 185, 129, 0.15); color: var(--brand-success); }
-.activity-icon.add { background: rgba(79, 70, 229, 0.15); color: var(--brand-primary); }
-.activity-icon.edit { background: rgba(245, 158, 11, 0.15); color: var(--brand-warning); }
-.activity-icon.delete { background: rgba(244, 63, 94, 0.15); color: var(--brand-danger); }
-.activity-icon.expense { background: rgba(100, 116, 139, 0.15); color: var(--brand-neutral); }
-.activity-icon.customer { background: rgba(99, 102, 241, 0.15); color: var(--brand-primary-light); }
-.activity-icon.login { background: rgba(16, 185, 129, 0.15); color: var(--brand-success); }
-.activity-icon.logout { background: rgba(100, 116, 139, 0.15); color: var(--brand-neutral); }
-
-.activity-content {
-    flex: 1;
-    min-width: 0;
-}
-
-.activity-content .activity-title {
-    font-weight: 600;
-    font-size: 0.9rem;
-    color: var(--text-primary);
-    margin-bottom: 0.25rem;
-}
-
-.activity-content .activity-detail {
-    font-size: 0.8rem;
-    color: var(--text-muted);
-    line-height: 1.4;
-}
-
-.activity-meta {
-    text-align: right;
-    flex-shrink: 0;
-}
-
-.activity-meta .activity-user {
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: var(--brand-primary);
-    display: block;
-}
-
-.activity-meta .activity-time {
-    font-size: 0.7rem;
-    color: var(--text-muted);
-    display: block;
-    margin-top: 0.15rem;
-}
-
-.activity-meta .activity-role-badge {
-    display: inline-block;
-    font-size: 0.65rem;
-    padding: 2px 8px;
-    border-radius: 10px;
-    margin-top: 0.25rem;
-    font-weight: 600;
-}
-
-.activity-role-badge.admin {
-    background: rgba(79, 70, 229, 0.15);
-    color: var(--brand-primary);
-}
-
-.activity-role-badge.staff {
-    background: rgba(100, 116, 139, 0.15);
-    color: var(--brand-neutral);
-}
-
-/* Role-based restricted access indicators */
-.staff-restricted {
-    opacity: 0.5;
-    pointer-events: none;
-    filter: grayscale(0.3);
-}
-
-.staff-hidden {
-    display: none !important;
-}
-
-/* Permission denied tooltip */
-.permission-denied {
-    position: relative;
-}
-
-.permission-denied::after {
-    content: attr(data-denied-msg);
-    position: absolute;
-    bottom: calc(100% + 8px);
-    left: 50%;
-    transform: translateX(-50%);
-    background: var(--brand-danger);
-    color: white;
-    padding: 6px 12px;
-    border-radius: var(--radius-sm);
-    font-size: 0.75rem;
-    white-space: nowrap;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.2s ease;
-    z-index: 100;
-}
-
-.permission-denied:hover::after {
-    opacity: 1;
-}
-
-/* Staff view - read-only inventory */
-.staff-view .action-edit,
-.staff-view .action-delete,
-.staff-view .btn-danger,
-.staff-view #open-product-modal,
-.staff-view #open-expense-modal,
-.staff-view #open-customer-modal {
-    display: none !important;
-}
-
-/* Activity log filter tabs */
-.log-filter-tabs {
-    display: flex;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-    flex-wrap: wrap;
-}
-
-.log-filter-tab {
-    padding: 0.4rem 1rem;
-    border-radius: 20px;
-    border: 1px solid var(--surface-border);
-    background: var(--surface-card);
-    color: var(--text-muted);
-    font-size: 0.8rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.log-filter-tab:hover,
-.log-filter-tab.active {
-    background: var(--brand-primary);
-    color: white;
-    border-color: var(--brand-primary);
-}
-
-/* Empty state for activity log */
-.activity-empty {
-    text-align: center;
-    padding: 3rem 1rem;
-    color: var(--text-muted);
-}
-
-.activity-empty i {
-    font-size: 3rem;
-    margin-bottom: 1rem;
-    opacity: 0.3;
-}
-
-/* Role indicator in sidebar */
-.role-indicator {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    font-size: 0.7rem;
-    padding: 3px 10px;
-    border-radius: 12px;
-    font-weight: 600;
-    margin-top: 0.25rem;
-}
-
-.role-indicator.admin {
-    background: rgba(79, 70, 229, 0.15);
-    color: var(--brand-primary);
-}
-
-.role-indicator.staff {
-    background: rgba(100, 116, 139, 0.15);
-    color: var(--brand-neutral);
-}
-
-.role-indicator::before {
-    content: '';
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: currentColor;
-}
-
-/* Staff notification banner */
-.staff-banner {
-    background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(245, 158, 11, 0.05) 100%);
-    border: 1px solid rgba(245, 158, 11, 0.2);
-    border-radius: var(--radius-md);
-    padding: 0.75rem 1rem;
-    margin-bottom: 1.5rem;
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    font-size: 0.85rem;
-    color: var(--brand-warning);
-}
-
-.staff-banner i {
-    font-size: 1.2rem;
-}
-
-/* Responsive activity log */
-@media (max-width: 768px) {
-    .activity-log-item {
-        flex-direction: column;
-        gap: 0.5rem;
-    }
-    
-    .activity-meta {
-        text-align: left;
-        display: flex;
-        gap: 0.5rem;
-        align-items: center;
-    }
-    
-    .activity-meta .activity-time {
-        margin-top: 0;
-    }
-}
-
-/* ==========================================================
    RESPONSIVE — Tablets, phones, and small screens
    ========================================================== */
 
@@ -1179,5 +921,180 @@ body {
 
     #reports-section {
         display: block !important;
+    }
+}
+
+/* ==========================================================
+   [V3] ROLE-BASED ACCESS CONTROL & ACTIVITY LOG STYLES
+   ========================================================== */
+
+/* Role Badge Colors */
+.role-badge.admin {
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(79, 70, 229, 0.3);
+}
+.role-badge.staff {
+    background: linear-gradient(135deg, #0ea5e9, #06b6d4);
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(14, 165, 233, 0.3);
+}
+
+/* Staff view restrictions */
+.staff-view .admin-only,
+.staff-view .admin-only-btn {
+    display: none !important;
+}
+
+/* Staff restriction banner */
+.staff-restricted-banner {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(245, 158, 11, 0.05));
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    border-radius: var(--radius-md);
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: #d97706;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+.staff-restricted-banner i {
+    font-size: 1.1rem;
+}
+
+/* Activity Log Table */
+.activity-log-table th {
+    white-space: nowrap;
+}
+.activity-log-table td {
+    font-size: 0.88rem;
+    vertical-align: middle;
+}
+
+/* Action badges */
+.log-action-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+.log-action-badge.sale {
+    background: rgba(16, 185, 129, 0.15);
+    color: #059669;
+}
+.log-action-badge.product_add,
+.log-action-badge.product_edit {
+    background: rgba(79, 70, 229, 0.15);
+    color: #4f46e5;
+}
+.log-action-badge.product_delete {
+    background: rgba(244, 63, 94, 0.15);
+    color: #e11d48;
+}
+.log-action-badge.expense_add {
+    background: rgba(245, 158, 11, 0.15);
+    color: #d97706;
+}
+.log-action-badge.customer_add {
+    background: rgba(14, 165, 233, 0.15);
+    color: #0284c7;
+}
+.log-action-badge.login,
+.log-action-badge.logout {
+    background: rgba(100, 116, 139, 0.15);
+    color: #475569;
+}
+
+/* User cell in activity log */
+.log-user-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.log-user-cell .user-mini-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--surface-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    border: 1px solid var(--surface-border);
+}
+
+/* Timestamp styling */
+.log-timestamp {
+    font-family: 'Plus Jakarta Sans', monospace;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+/* Detail text truncation */
+.log-detail-text {
+    max-width: 280px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Permission denied toast */
+.permission-denied-toast {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    background: var(--brand-danger);
+    color: white;
+    padding: 1rem 1.5rem;
+    border-radius: var(--radius-md);
+    box-shadow: 0 10px 25px rgba(244, 63, 94, 0.3);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-weight: 600;
+    animation: slideInRight 0.3s ease;
+}
+@keyframes slideInRight {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+/* Activity log filters */
+#actlog-filter-user,
+#actlog-filter-action {
+    min-width: 160px;
+}
+
+/* Empty state */
+.activity-empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--text-muted);
+}
+.activity-empty-state i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.3;
+}
+
+/* Print styles for activity log */
+@media print {
+    .activity-log-table {
+        font-size: 0.75rem;
+    }
+    .log-action-badge {
+        border: 1px solid #ccc;
+        background: none !important;
+        color: #000 !important;
     }
 }
